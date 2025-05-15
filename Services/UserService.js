@@ -40,32 +40,45 @@ const LoginUser = (data) => {
   return new Promise(async (resolve, reject) => {
     const { email, password } = data;
     try {
-      const checkUser = User.findOne({
-        email,
-      });
+      const checkUser = await User.findOne({ email });
 
-      if (checkUser == null) {
-        resolve({
+      if (!checkUser) {
+        return resolve({
           status: "ERR",
-          message: "Email chưa đăng ký . Vui lòng đăng ký !",
+          message: "Email chưa đăng ký. Vui lòng đăng ký!",
         });
       }
+
       const valid = await bcrypt.compare(password, checkUser.password);
-      if (!valid) throw new Error("Invalid password");
-      const access_token = await genneralAccessToken({ id: checkUser._id, isAdmin: checkUser.isAdmin });
-      const refresh_token = await genneralRefreshToken({ id: checkUser._id, isAdmin: checkUser.isAdmin });
+      if (!valid) {
+        return resolve({
+          status: "ERR",
+          message: "Mật khẩu không đúng",
+        });
+      }
+
+      const access_token = await genneralAccessToken({
+        id: checkUser._id,
+        isAdmin: checkUser.isAdmin,
+      });
+
+      const refresh_token = await genneralRefreshToken({
+        id: checkUser._id,
+        isAdmin: checkUser.isAdmin,
+      });
 
       resolve({
-        status: 'OK',
-        message: 'Đăng nhập thành công',
+        status: "OK",
+        message: "Đăng nhập thành công",
         access_token,
-        refresh_token
-    })
+        refresh_token,
+      });
     } catch (err) {
-        reject(err)
+      reject(err);
     }
   });
 };
+
 
 module.exports = {
   createUser,

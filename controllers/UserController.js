@@ -33,39 +33,53 @@ const CreateUser = async (req, res) => {
   }
 };
 
-const Login =async(req,res)=>{
-try{
-    const {email , password} = req.body
-    const reg = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/;
+const Login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const reg = /^\w+([-.']?\w+)*@\w+([-.]?\w+)*(\.\w{2,3})+$/;
     const isCheckEmail = reg.test(email);
-    if (!email || !password ) {
-        return res.status(200).json({
-          status: "ERR",
-          message: "The input is required",
-        });
-      } else if (!isCheckEmail) {
-        return res.status(200).json({
-          status: "ERR",
-          message: "The input is email",
-        });
-      }
 
-      const response = await UserService.LoginUser(req.body)
-      const { refresh_token, ...newReponse } = response
-      res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'strict',
-        path: '/',
-    })
-    return res.status(200).json({...newReponse, refresh_token})
+    if (!email || !password) {
+      return res.status(400).json({
+        status: "ERR",
+        message: "Email và mật khẩu là bắt buộc",
+      });
+    }
 
-}catch(err){
-    return res.status(404).json({
-        message: err
-    })
-}
-}
+    if (!isCheckEmail) {
+      return res.status(400).json({
+        status: "ERR",
+        message: "Email không hợp lệ",
+      });
+    }
+
+    const response = await UserService.LoginUser(req.body);
+
+    if (response.status !== "OK") {
+      return res.status(401).json(response);
+    }
+
+    const { refresh_token, ...newResponse } = response;
+
+    // Set cookie
+    res.cookie("refresh_token", refresh_token, {
+      httpOnly: true,
+      secure: false, // đổi thành true nếu dùng HTTPS
+      sameSite: "strict",
+      path: "/",
+    });
+
+    return res.status(200).json({ ...newResponse, refresh_token });
+
+  } catch (err) {
+    return res.status(500).json({
+      status: "ERR",
+      message: err.message || "Internal server error",
+    });
+  }
+};
+
 
 
 module.exports={
